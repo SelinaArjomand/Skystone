@@ -39,6 +39,9 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcontroller.external.samples.HardwarePushbot;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.teamcode.pushbothardware;
 
 /**
@@ -74,13 +77,12 @@ import org.firstinspires.ftc.teamcode.pushbothardware;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@Autonomous(name="STCauto", group="Pushbot")
+@Autonomous(name="STCauto2019", group="Pushbot")
 public class STCauto2019 extends LinearOpMode {
 
     /* Declare OpMode members. */
-    HardwarePushbot         robot   = new HardwarePushbot();   // Use a Pushbot's hardware
-    pushbothardware robot1 = new pushbothardware();
-    ModernRoboticsI2cGyro   gyro    = null;                    // Additional Gyro device
+    pushbothardware robot = new pushbothardware();             // Use a Pushbot's hardware
+    //ModernRoboticsI2cGyro   gyro    = null;                    // Additional Gyro device
     BNO055IMU imu;
 
     static final double     COUNTS_PER_MOTOR_REV    = 1120 ;    // eg: TETRIX Motor Encoder
@@ -107,23 +109,19 @@ public class STCauto2019 extends LinearOpMode {
          * The init() method of the hardware class does most of the work here
          */
         robot.init(hardwareMap);
-        gyro = (ModernRoboticsI2cGyro)hardwareMap.gyroSensor.get("gyro");
+        //gyro = (ModernRoboticsI2cGyro)hardwareMap.gyroSensor.get("gyro");
 
         // Ensure the robot it stationary, then reset the encoders and calibrate the gyro.
-        robot.leftDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        robot.rightDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        robot.leftfront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        robot.leftback.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        robot.rightfront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        robot.rightback.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         // Send telemetry message to alert driver that we are calibrating;
         telemetry.addData(">", "Calibrating Gyro");    //
         telemetry.update();
 
-        gyro.calibrate();
-
-        // make sure the gyro is calibrated before continuing
-        while (!isStopRequested() && gyro.isCalibrating())  {
-            sleep(50);
-            idle();
-        }
+        //gyro.calibrate();
 
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
         parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
@@ -137,49 +135,67 @@ public class STCauto2019 extends LinearOpMode {
         imu = hardwareMap.get(BNO055IMU.class, "imu 1");
         imu.initialize(parameters);
 
+        /*// make sure the gyro is calibrated before continuing
+        while (!isStopRequested() && gyro.isCalibrating())  {
+            sleep(50);
+            idle();
+        }*/
+
         telemetry.addData(">", "Robot Ready.");    //
         telemetry.update();
 
-        robot.leftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        robot.rightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        waitForStart();  // make sure gyro is calibrated before start button
+
+        robot.leftfront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.leftback.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.rightfront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.rightback.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         // Wait for the game to start (Display Gyro value), and reset gyro before we move..
         while (!isStarted()) {
-            telemetry.addData(">", "Robot Heading = %d", gyro.getIntegratedZValue());
+            telemetry.addData(">", "Robot Heading = %d", imu.getAngularOrientation());
             telemetry.update();
         }
 
-        gyro.resetZAxisIntegrator();
+        //gyro.resetZAxisIntegrator();
 
         // Step through each leg of the path,
         // Note: Reverse movement is obtained by setting a negative distance (not speed)
         // Put a hold after each turn
 
-
-        //turn 180
-        //drive ?
-        //grab glyph
-        //turn 180
-        //drive back ?
-
-        gyroTurn(TURN_SPEED, 180);
-        gyroHold(0,0, 1);
-        gyroDrive(DRIVE_SPEED, 68.0, 0.0);    // Drive FWD 48 inches
         gyroHold(0,0,1);
-        grab();
+        driveForward(DRIVE_SPEED, true);            //drive forward 52in into glyph pile
+        sleep(2400);
+        gyroDrive(0, 0, 0);
+        sleep(1000);
+        strafe(DRIVE_SPEED, true);
+        sleep(2400);
+        gyroDrive(0,0,0);
+        sleep(1000);
+        driveForward(DRIVE_SPEED, false);
+        sleep(2400);
+        gyroDrive(0,0,0);
+        sleep(1000);
+        strafe(DRIVE_SPEED, false);
+        sleep(2400);
+        gyroDrive(0,0,0);
+        //
         gyroHold(0,0,1);
-        gyroTurn(TURN_SPEED, 180);
-        gyroHold(0,0,1);
-        gyroDrive(DRIVE_SPEED, 68, 0.0);
-        //gyroHold(0,0,1);
-        /*gyroTurn( TURN_SPEED, -45.0);         // Turn  CCW to -45 Degrees
-        gyroHold( TURN_SPEED, -45.0, 0.5);    // Hold -45 Deg heading for a 1/2 second
-        gyroDrive(DRIVE_SPEED, 12.0, -45.0);  // Drive FWD 12 inches at 45 degrees
-        gyroTurn( TURN_SPEED,  45.0);         // Turn  CW  to  45 Degrees
-        gyroHold( TURN_SPEED,  45.0, 0.5);    // Hold  45 Deg heading for a 1/2 second
-        gyroTurn( TURN_SPEED,   0.0);         // Turn  CW  to   0 Degrees
-        gyroHold( TURN_SPEED,   0.0, 1.0);    // Hold  0 Deg heading for a 1 second
-        gyroDrive(DRIVE_SPEED,-48.0, 0.0);    // Drive REV 48 inches */
+        driveForward(DRIVE_SPEED, true);            //drive forward 52in into glyph pile
+        sleep(2400);
+        gyroDrive(0, 0, 0);
+        sleep(1000);
+        strafe(DRIVE_SPEED, true);
+        sleep(2400);
+        gyroDrive(0,0,0);
+        sleep(1000);
+        driveForward(DRIVE_SPEED, false);
+        sleep(2400);
+        gyroDrive(0,0,0);
+        sleep(1000);
+        strafe(DRIVE_SPEED, false);
+        sleep(2400);
+        gyroDrive(0,0,0);
 
         telemetry.addData("Path", "Complete");
         telemetry.update();
@@ -202,8 +218,10 @@ public class STCauto2019 extends LinearOpMode {
                             double distance,
                             double angle) {
 
-        int     newLeftTarget;
-        int     newRightTarget;
+        int     newLeftfrontTarget;
+        int     newLeftbackTarget;
+        int     newRightfrontTarget;
+        int     newRightbackTarget;
         int     moveCounts;
         double  max;
         double  error;
@@ -216,24 +234,32 @@ public class STCauto2019 extends LinearOpMode {
 
             // Determine new target position, and pass to motor controller
             moveCounts = (int)(distance * COUNTS_PER_INCH);
-            newLeftTarget = robot.leftDrive.getCurrentPosition() + moveCounts;
-            newRightTarget = robot.rightDrive.getCurrentPosition() + moveCounts;
+            newLeftfrontTarget = robot.leftfront.getCurrentPosition() + moveCounts;
+            newLeftbackTarget = robot.leftback.getCurrentPosition() + moveCounts;
+            newRightfrontTarget = robot.rightfront.getCurrentPosition() + moveCounts;
+            newRightbackTarget = robot.rightback.getCurrentPosition() + moveCounts;
 
             // Set Target and Turn On RUN_TO_POSITION
-            robot.leftDrive.setTargetPosition(newLeftTarget);
-            robot.rightDrive.setTargetPosition(newRightTarget);
+            robot.leftfront.setTargetPosition(newLeftfrontTarget);
+            robot.leftback.setTargetPosition(newLeftbackTarget);
+            robot.rightfront.setTargetPosition(newRightfrontTarget);
+            robot.rightback.setTargetPosition(newRightbackTarget);
 
-            robot.leftDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            robot.rightDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            robot.leftfront.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            robot.leftback.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            robot.rightfront.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            robot.rightback.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
             // start motion.
             speed = Range.clip(Math.abs(speed), 0.0, 1.0);
-            robot.leftDrive.setPower(speed);
-            robot.rightDrive.setPower(speed);
+            robot.leftfront.setPower(speed);
+            robot.leftback.setPower(speed);
+            robot.rightfront.setPower(speed);
+            robot.rightback.setPower(speed);
 
             // keep looping while we are still active, and BOTH motors are running.
             while (opModeIsActive() &&
-                   (robot.leftDrive.isBusy() && robot.rightDrive.isBusy())) {
+                   (robot.leftfront.isBusy() && robot.leftback.isBusy() && robot.rightfront.isBusy() && robot.rightback.isBusy())) {
 
                 // adjust relative speed based on heading error.
                 error = getError(angle);
@@ -254,25 +280,33 @@ public class STCauto2019 extends LinearOpMode {
                     rightSpeed /= max;
                 }
 
-                robot.leftDrive.setPower(leftSpeed);
-                robot.rightDrive.setPower(rightSpeed);
+                robot.leftfront.setPower(leftSpeed);
+                robot.leftback.setPower(leftSpeed);
+                robot.rightfront.setPower(rightSpeed);
+                robot.rightback.setPower(rightSpeed);
 
                 // Display drive status for the driver.
                 telemetry.addData("Err/St",  "%5.1f/%5.1f",  error, steer);
-                telemetry.addData("Target",  "%7d:%7d",      newLeftTarget,  newRightTarget);
-                telemetry.addData("Actual",  "%7d:%7d",      robot.leftDrive.getCurrentPosition(),
-                                                             robot.rightDrive.getCurrentPosition());
+                telemetry.addData("Target",  "%7d:%7d",      newLeftfrontTarget,  newLeftbackTarget,  newRightfrontTarget,  newRightbackTarget);
+                telemetry.addData("Actual",  "%7d:%7d",      robot.leftfront.getCurrentPosition(),
+                                                                            robot.leftback.getCurrentPosition(),
+                                                                            robot.rightfront.getCurrentPosition(),
+                                                                            robot.rightback.getCurrentPosition());
                 telemetry.addData("Speed",   "%5.2f:%5.2f",  leftSpeed, rightSpeed);
                 telemetry.update();
             }
 
             // Stop all motion;
-            robot.leftDrive.setPower(0);
-            robot.rightDrive.setPower(0);
+            robot.leftfront.setPower(0);
+            robot.leftback.setPower(0);
+            robot.rightfront.setPower(0);
+            robot.rightback.setPower(0);
 
             // Turn off RUN_TO_POSITION
-            robot.leftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            robot.rightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            robot.leftfront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            robot.leftback.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            robot.rightfront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            robot.rightback.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         }
     }
 
@@ -319,13 +353,43 @@ public class STCauto2019 extends LinearOpMode {
         }
 
         // Stop all motion;
-        robot.leftDrive.setPower(0);
-        robot.rightDrive.setPower(0);
+        robot.leftfront.setPower(0);
+        robot.leftback.setPower(0);
+        robot.rightfront.setPower(0);
+        robot.rightback.setPower(0);
+    }
+
+    public void driveForward(double speed, boolean forward){
+        if(forward) {
+            robot.leftfront.setPower(speed);
+            robot.rightfront.setPower(speed);
+            robot.leftback.setPower(-speed);
+            robot.rightback.setPower(-speed);
+        } else {
+            robot.leftfront.setPower(-speed);
+            robot.rightfront.setPower(-speed);
+            robot.leftback.setPower(speed);
+            robot.rightback.setPower(speed);
+        }
+    }
+
+    public void strafe(double speed, boolean right){
+        if (right) {
+            robot.leftfront.setPower(speed);
+            robot.rightfront.setPower(-speed);
+            robot.leftback.setPower(speed);
+            robot.rightback.setPower(-speed);
+        } else {
+            robot.leftfront.setPower(-speed);
+            robot.rightfront.setPower(speed);
+            robot.leftback.setPower(-speed);
+            robot.rightback.setPower(speed);
+        }
     }
 
    public void grab(){
-        robot1.arm1.setPosition(0.5);
-        robot1.arm2.setPosition(0.5);
+        robot.arm1.setPosition(0.5);
+        robot.arm2.setPosition(0.5);
     }
 
 
@@ -362,8 +426,10 @@ public class STCauto2019 extends LinearOpMode {
         }
 
         // Send desired speeds to motors.
-        robot.leftDrive.setPower(leftSpeed);
-        robot.rightDrive.setPower(rightSpeed);
+        robot.leftfront.setPower(leftSpeed);
+        robot.leftback.setPower(leftSpeed);
+        robot.rightfront.setPower(rightSpeed);
+        robot.rightback.setPower(rightSpeed);
 
         // Display it for the driver.
         telemetry.addData("Target", "%5.2f", angle);
@@ -384,7 +450,7 @@ public class STCauto2019 extends LinearOpMode {
         double robotError;
 
         // calculate error in -179 to +180 range  (
-        robotError = targetAngle - gyro.getIntegratedZValue();
+        robotError = targetAngle - imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle;
         while (robotError > 180)  robotError -= 360;
         while (robotError <= -180) robotError += 360;
         return robotError;
