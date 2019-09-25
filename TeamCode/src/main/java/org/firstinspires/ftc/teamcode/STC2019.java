@@ -64,11 +64,12 @@ public class STC2019 extends OpMode
 
     public DcMotor lift;
 
-    public Servo arm1; //right?
-    public Servo arm2; //left?
+    public Servo arm1; //right
+    public Servo arm2; //left
 
     @Override
     public void init() {
+        // initializing motors
         leftfront = hardwareMap.dcMotor.get("leftfront");
         leftback = hardwareMap.dcMotor.get("leftback");
         rightfront = hardwareMap.dcMotor.get("rightfront");
@@ -77,12 +78,16 @@ public class STC2019 extends OpMode
         rightback.setDirection(DcMotorSimple.Direction.REVERSE);
 
         lift = hardwareMap.dcMotor.get("lift");
+        lift.setDirection(DcMotorSimple.Direction.REVERSE);
 
+        // initializing servos
         arm1 = hardwareMap.servo.get("arm1");
         arm2 = hardwareMap.servo.get("arm2");
-
         arm2.setDirection(Servo.Direction.REVERSE);
 
+
+        // Send telemetry message to signify robot waiting;
+        telemetry.addData("Say", "Hello Driver");
 
     }
 
@@ -103,8 +108,8 @@ public class STC2019 extends OpMode
 
         //Gamepad 1 Controls
 
-        if (Math.abs(gamepad1.left_stick_x) > .2) {      // drive train
-            x = -gamepad1.left_stick_x;
+        if (Math.abs(gamepad1.right_stick_x) > .2) {      // drive train
+            x = gamepad1.right_stick_x;
         } else {
             x = 0;
         }
@@ -115,8 +120,8 @@ public class STC2019 extends OpMode
             y = 0;
         }
 
-        if (Math.abs(gamepad1.right_stick_x) > .2) {
-            z = -gamepad1.right_stick_x;
+        if (Math.abs(gamepad1.left_stick_x) > .2) {
+            z = gamepad1.left_stick_x;
         } else {
             z = 0;
         }
@@ -125,14 +130,14 @@ public class STC2019 extends OpMode
         //Gamepad 2 Controls
 
         if (Math.abs(gamepad2.left_stick_y) > .2) {      //  linear slide lift
-            liftPower = gamepad2.right_stick_y;
+            liftPower = gamepad2.left_stick_y;
         } else {
             liftPower = 0;
         }
 
         if (gamepad2.a) {                               // arms
-            arm1.setPosition(1);
-            arm2.setPosition(1);
+            arm1.setPosition(0.7);
+            arm2.setPosition(0.7);
         }
 
         if (gamepad2.b) {
@@ -143,13 +148,21 @@ public class STC2019 extends OpMode
 
 
 
-        leftback.setPower((x - y - z)*.75);                   // powers
-        leftfront.setPower((-x - y - z)*.75);
-        rightback.setPower((-x - y + z)*.75);
-        rightfront.setPower((x - y + z)*.75);
+        leftback.setPower(y - x + z);                   // powers
+        leftfront.setPower(-y + x + z);
+        rightback.setPower(y + x - z);
+        rightfront.setPower(-y - x - z);
 
         lift.setPower(liftPower);
 
     }
+
+    /*
+     * Code to run ONCE after the driver hits STOP
+     */
+    @Override
+    public void stop () {
+    }
+
 
 }
